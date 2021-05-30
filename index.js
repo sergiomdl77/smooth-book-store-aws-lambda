@@ -11,6 +11,7 @@ exports.handler = async (event) => {
     // TODO implement
     pool.connect();
     let data = [];
+    let value = 1;
     
     await pool.query('SELECT * FROM book')
             .then((res) => data = res.rows)
