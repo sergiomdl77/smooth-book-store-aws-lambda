@@ -24,8 +24,9 @@ exports.handler = async (event) => {
         break;
         case event.resource === '/book/{bookId}' && event.httpMethod === 'GET':
             response = await getBook(event.pathParameters.bookId);
-//            response = await getBook(1);
-
+        break;
+        case event.resource === '/book' && event.httpMethod === 'POST':
+            response = await addBook(JSON.parse(event.body));
         break;
         /*
         case event.path === '/book'  && event.httpMethod === 'POST':
@@ -44,14 +45,25 @@ exports.handler = async (event) => {
     return response;
 }
 
-function createResponse(data)
+/*********************************************************
+ * Function that builds the response object to be sent back
+ * to the client as the http response.
+ *********************************************************/
+function createResponse(body)
 {
     return  { 
              statusCode: 200,
-             body: JSON.stringify(data)
+             body: JSON.stringify(body)
             }
 }
 
+
+/*****************************************************************
+ * Function that utilizes SQL to retrieve all entries from the BOOK 
+ * table. It returns an object with a successful status code and the 
+ * body of the object which is the result of the query (all table rows) 
+ * stringified into JSON format for the http response.
+ *****************************************************************/
 async function getAllBooks()
 {
     let data = [];
@@ -62,6 +74,14 @@ async function getAllBooks()
     return createResponse(data);
 }
 
+
+/*****************************************************************
+ * Function that utilizes SQL to retrieve one entry from the BOOK 
+ * table with an specific book_id. It returns an object with a 
+ * successful status code and the body of the object which is the 
+ * result of the query (the row) stringified 
+ * into JSON format for the http response.
+ *****************************************************************/
 async function getBook(b_id)
 {
     let data = [];
@@ -73,4 +93,23 @@ async function getBook(b_id)
     return createResponse(data);
 }
 
+
+/*******************************************************************
+ * Function that used SQL to insert an item into the BOOK table. The
+ * new item is received as parameter as an object that was JSON parsed.
+ * The SQL statment utilizes the "RETURNING" which retrieves values of columns 
+ * (and expressions based on columns) that were modified by an insert, 
+ * delete or update.
+********************************************************************/
+async function addBook(b)
+{
+    let addedItem;
+
+//    await pool.query(`INSERT INTO book (title, category, description) VALUES ( ${b.title}, ${b.category}, ${b.desc} )` )
+    await pool.query('INSERT INTO book (title, category, description) VALUES ($1, $2, $3) RETURNING *', [b.title, b.category, b.desc])
+            .then((res) => addedItem = res.rows[0])
+            .catch((err) => console.log(err));
+
+    return createResponse(addedItem);
+}
 
